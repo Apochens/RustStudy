@@ -1,5 +1,3 @@
-use core::num;
-
 pub fn sort(nums: Vec<i32>, ascending: bool) -> Vec<i32> {
 
     let mut nums = nums;
