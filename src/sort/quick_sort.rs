@@ -23,6 +23,7 @@ fn partition(nums: &mut Vec<i32>, l: usize, r: usize) -> usize {
             low += 1;
         }
     }
+    
     nums.swap(low, r - 1);
     low
 }

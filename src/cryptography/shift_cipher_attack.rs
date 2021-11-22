@@ -33,10 +33,10 @@ impl Sovler {
         println!("[Sovler-find_k] Started finding k.");
         for k in 0..25 {
             let temp_delta = (650.0 - self.sum_shift_prob_2(k)).abs();
-            println!("[Sovler-find_k] k: {}, plaintext in k: {}, delta: {}", k, self.compute_plaintext(k), temp_delta);
+            println!("[Sovler-find_k] k: {}, plaintext in k: {}, delta: {}", 26 - k, self.compute_plaintext(26 - k), temp_delta);
             if temp_delta < delta {
                 delta = temp_delta;
-                res = k
+                res = 26 - k
             }
         }
         println!("[Sovler-find_k] Finished finding k...");
