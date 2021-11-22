@@ -1,13 +1,13 @@
 use super::{vec3::Vec3, ray::{Ray, Hittable, HitRecord}};
 
 #[derive(Debug)]
-struct Sphere {
+pub struct Sphere {
     center: Vec3,
     radius: f32
 }
 
 impl Sphere {
-    fn new(center: Vec3, radius: f32) -> Self {
+    pub fn new(center: Vec3, radius: f32) -> Self {
         Self{center, radius}
     }
 }

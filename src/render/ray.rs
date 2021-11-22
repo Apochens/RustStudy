@@ -24,6 +24,7 @@ impl Ray {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct HitRecord {
     point: Vec3,
     normal: Vec3,
@@ -32,6 +33,11 @@ pub struct HitRecord {
 }
 
 impl HitRecord {
+
+    pub fn new() -> Self {
+        Self{point: Vec3::new_empty(), normal: Vec3::new_empty(), t: 0., front_face: false}
+    }
+
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: &Vec3) {
         self.front_face = ray.direction().dot_mul(outward_normal) < 0.0;
         self.normal = if self.front_face == true { *outward_normal } else { -(*outward_normal) }

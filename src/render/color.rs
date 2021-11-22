@@ -1,6 +1,8 @@
+use crate::render::utils::clamp;
 use crate::render::vec3::Vec3;
 use std::fs::File;
 use std::io::Write;
+use std::process::Output;
 
 #[derive(Debug)]
 pub struct Color(Vec3);
@@ -38,4 +40,30 @@ impl std::convert::From<Vec3> for Color {
             v.y() * 255.999, 
             v.z() * 255.999))
     }
+}
+
+impl std::ops::Add<Color> for Color {
+    type Output = Color;
+
+    fn add(self, rhs: Color) -> Self::Output {
+        Color(Vec3::new(
+            self.get_color().x() + rhs.get_color().x(),
+            self.get_color().y() + rhs.get_color().y(),
+            self.get_color().z() + rhs.get_color().z()
+        ))
+    }
+}
+
+pub fn write_color(pixel_color: Color, samples_per_pixel: i32) {
+    let r = pixel_color.get_color().x();
+    let g = pixel_color.get_color().y();
+    let b = pixel_color.get_color().z();
+
+    let scale = 1. / samples_per_pixel as f32;
+
+    println!("{} {} {}", 
+        256. * clamp(r * scale, 0.0, 0.999),
+        256. * clamp(g * scale, 0.0, 0.999),
+        256. * clamp(b * scale, 0.0, 0.999)
+    )
 }
