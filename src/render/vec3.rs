@@ -1,5 +1,7 @@
 use std::ops::Neg;
 
+use super::utils::{random, random_in_range};
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
     x: f32,
@@ -47,6 +49,46 @@ impl Vec3 {
         self.x /= len;
         self.y /= len;
         self.z /= len;
+    }
+
+    pub fn random() -> Vec3 {
+        Vec3::new(random(), random(), random())
+    }
+
+    pub fn random_in_range(min: f32, max: f32) -> Vec3 {
+        Vec3::new(random_in_range(min, max), random_in_range(min, max), random_in_range(min, max))
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3 {
+        let mut ret = Vec3::new_empty();
+        loop {
+            let p = Vec3::random_in_range(-1., 1.);
+            if p.len_square() >= 1. { continue; }
+            ret = p;
+            break;
+        }
+        ret
+    }
+
+    pub fn random_unit_vec3() -> Vec3 {
+        let mut vec3 = Self::random_in_unit_sphere();
+        vec3.to_unit();
+        vec3
+    }
+
+    pub fn random_in_hemisphere(normal: &Vec3) -> Vec3 {
+        let in_unit_sphere = Self::random_in_unit_sphere();
+        if in_unit_sphere.dot_mul(normal) > 0. { in_unit_sphere }
+        else { -in_unit_sphere }
+    }
+
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8f32;
+        self.x().abs() < s && self.y().abs() < s && self.z().abs() < s
+    }
+
+    pub fn reflect(&self, normal: &Vec3) -> Vec3 {
+        *self - 2. * self.dot_mul(normal) * (*normal)
     }
 }
 

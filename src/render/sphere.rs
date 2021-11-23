@@ -1,14 +1,17 @@
-use super::{vec3::Vec3, ray::{Ray, Hittable, HitRecord}};
+use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug)]
+use super::{material::Material, ray::{Ray, Hittable, HitRecord}, vec3::Vec3};
+
+#[derive(Clone)]
 pub struct Sphere {
     center: Vec3,
-    radius: f32
+    radius: f32,
+    mat_ptr: Rc<RefCell<dyn Material>>
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Self {
-        Self{center, radius}
+    pub fn new(center: Vec3, radius: f32, mat_ptr: Rc<RefCell<dyn Material>>) -> Self {
+        Self{center, radius, mat_ptr}
     }
 }
 
@@ -35,6 +38,7 @@ impl Hittable for Sphere {
         rec.set_point(ray.at(rec.t()));
         let outward_normal = (rec.point() - self.center) / self.radius;
         rec.set_face_normal(ray, &outward_normal);
+        rec.set_mat_ptr(Some(Rc::clone(&self.mat_ptr)));
         
         true
     }

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, io::Write, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 mod render;
 
 use render::{
@@ -6,30 +6,26 @@ use render::{
     ray::{HitRecord, Hittable, Ray}, 
     utils, vec3::Vec3, 
     hittable_list::HittableList,
-    sphere::Sphere
+    sphere::Sphere,
+    camera::Camera, 
+    color::write_color, 
+    utils::random,
+    material::{Lambertian, Metal}
 };
 
-use crate::render::{camera::Camera, color::write_color, utils::random};
+fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
+    if depth <= 0 { return Color::new(0., 0., 0.) }
 
-fn hit_shpere(center: &Vec3, radius: f32, ray: &Ray) -> f32 {
-
-    let oc = ray.origin() - *center;
-    let direction = ray.direction();
-
-    let a = direction.len_square();
-    let half_b = oc.dot_mul(&direction);
-    let c = oc.len_square() - radius * radius;
-    let discriminant = half_b*half_b - a*c;
-
-    if discriminant < 0.0 { -1.0 } 
-    else { (-half_b - discriminant.sqrt()) / a }
-}
-
-fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
     let mut rec = HitRecord::new();
 
-    if world.hit(ray, 0., utils::INFINITY, &mut rec) {
-        Color::from(0.5 * (rec.normal() + Vec3::new(1., 1., 1.)))
+    if world.hit(ray, 0.001, utils::INFINITY, &mut rec) {
+        let mut scattered = Ray::new(Vec3::new_empty(), Vec3::new_empty());
+        let mut attenuation = Color::from(Vec3::new_empty());
+        if rec.mat_ptr().as_ref().borrow().scatter(ray, &rec, &mut attenuation, &mut scattered) {
+            attenuation * ray_color(&scattered, world, depth - 1)
+        } else {
+            Color::from(Vec3::new_empty())
+        }
     } else {
         let mut unit_direction = ray.direction();
         unit_direction.to_unit();
@@ -38,42 +34,6 @@ fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
     }
 }
 
-#[derive(Debug)]
-struct Render {
-    image_height: i32,
-    image_width: i32
-}
-
-impl Render {
-    fn new(image_width: i32, image_height: i32) -> Self {
-        Self{image_width, image_height}
-    }
-
-    fn default(&self, fp: &str) -> std::io::Result<String> {
-        let mut file = std::fs::File::create(fp)?;
-
-        file.write(b"P3\n")?;
-        file.write(format!("{} {}\n", self.image_width, self.image_height).as_bytes())?;
-        file.write(b"255\n")?;
-
-        let mut i = self.image_height - 1;
-        while i >= 0 {
-            for j in 0..self.image_width  {
-                let r: f32 = j as f32 / (self.image_width - 1) as f32;
-                let g: f32 = i as f32 / (self.image_height - 1) as f32;
-                let b: f32 = 0.25;
-
-                let color = Color::new(r, g, b);
-                color.print_color_to_file(&mut file)?;
-            }
-            i -= 1;
-        }
-
-        Ok("Finished rendering.".to_string())
-    }
-}
-
-
 fn main() {
 
     // Image
@@ -81,18 +41,34 @@ fn main() {
     let image_width: i32 = 400;
     let image_height: i32 = (image_width as f32 / aspect_ratio) as i32;
     let samples_per_pixel = 100;
+    let max_depth = 50i32;
 
-    // World
+    // World    
     let mut world = HittableList::new();
-    world.add(Rc::new(RefCell::new(Sphere::new(
-        Vec3::new(0., 0., -1.),
-        0.5
-    ))));
+    let material_ground = Lambertian::new(Color::new(0.8, 0.8, 0.0));
+    let material_center = Lambertian::new(Color::new(0.7, 0.3, 0.3));
+    let material_left = Metal::new(Color::new(0.8, 0.8, 0.8), 0.3);
+    let material_right = Metal::new(Color::new(0.8, 0.6, 0.2), 1.0);
     world.add(Rc::new(RefCell::new(Sphere::new(
         Vec3::new(0., -100.5, -1.),
-        100.
+        100.,
+        Rc::new(RefCell::new(material_ground))
     ))));
-
+    world.add(Rc::new(RefCell::new(Sphere::new(
+        Vec3::new(0., 0., -1.),
+        0.5,
+        Rc::new(RefCell::new(material_center))
+    ))));
+    world.add(Rc::new(RefCell::new(Sphere::new(
+        Vec3::new(-1., 0., -1.),
+        0.5,
+        Rc::new(RefCell::new(material_left))
+    ))));
+    world.add(Rc::new(RefCell::new(Sphere::new(
+        Vec3::new(1., 0., -1.),
+        0.5,
+        Rc::new(RefCell::new(material_right))
+    ))));
 
     // Camera
     let camera = Camera::new();
@@ -110,18 +86,10 @@ fn main() {
                 let u = (j as f32 + random()) / (image_width - 1) as f32;
                 let v = (i as f32 + random()) / (image_height - 1) as f32;
                 let ray = camera.get_ray(u, v);
-                pixel_color = pixel_color + ray_color(&ray, &world);
+                pixel_color = pixel_color + ray_color(&ray, &world, max_depth);
             }
             write_color(pixel_color, samples_per_pixel);
         }
         i -= 1;
     }
-    
-
-    // let render = Render::new(256, 256);
-    // let fp = "./image.ppm";
-    // match render.default(fp) {
-    //     Ok(msg) => println!("{}", msg),
-    //     Err(msg) => println!("{}", msg)
-    // }
 }

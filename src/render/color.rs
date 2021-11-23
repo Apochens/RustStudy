@@ -2,15 +2,14 @@ use crate::render::utils::clamp;
 use crate::render::vec3::Vec3;
 use std::fs::File;
 use std::io::Write;
-use std::process::Output;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color(Vec3);
 
 impl Color {
 
     pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self(Vec3::new(x * 255.999, y * 255.999, z * 255.999))
+        Self(Vec3::new(x , y, z))
     }
 
     pub fn get_color(&self) -> Vec3 {
@@ -34,12 +33,7 @@ impl Color {
 }
 
 impl std::convert::From<Vec3> for Color {
-    fn from(v: Vec3) -> Self {
-        Color(Vec3::new(
-            v.x() * 255.999, 
-            v.y() * 255.999, 
-            v.z() * 255.999))
-    }
+    fn from(v: Vec3) -> Self { Color(v) }
 }
 
 impl std::ops::Add<Color> for Color {
@@ -54,6 +48,13 @@ impl std::ops::Add<Color> for Color {
     }
 }
 
+impl std::ops::Mul<Color> for Color {
+    type Output = Color;
+    fn mul(self, rhs: Color) -> Self::Output {
+        Color::from(self.get_color() * rhs.get_color())
+    }
+}
+
 pub fn write_color(pixel_color: Color, samples_per_pixel: i32) {
     let r = pixel_color.get_color().x();
     let g = pixel_color.get_color().y();
@@ -62,8 +63,8 @@ pub fn write_color(pixel_color: Color, samples_per_pixel: i32) {
     let scale = 1. / samples_per_pixel as f32;
 
     println!("{} {} {}", 
-        256. * clamp(r * scale, 0.0, 0.999),
-        256. * clamp(g * scale, 0.0, 0.999),
-        256. * clamp(b * scale, 0.0, 0.999)
+        (256. * clamp((r * scale).sqrt(), 0.0, 0.999)) as i32,
+        (256. * clamp((g * scale).sqrt(), 0.0, 0.999)) as i32,
+        (256. * clamp((b * scale).sqrt(), 0.0, 0.999)) as i32
     )
 }
